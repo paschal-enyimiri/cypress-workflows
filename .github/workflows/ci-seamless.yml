@@ -1,0 +1,290 @@
+name: standard
+on:
+  workflow_call:
+    inputs:
+      # --- Branch Validation ---
+      validate-main:
+        description: 'Enable validation that main branch commits originate from a source branch'
+        type: boolean
+        required: false
+        default: false
+      main-source-branch:
+        description: 'Branch that main must be merged from (e.g., staging)'
+        type: string
+        required: false
+        default: 'staging'
+      
+      # --- Cypress Configuration ---
+      record:
+        description: 'Sends test results to Cypress Dashboard'
+        type: boolean
+        required: false
+        default: false
+      config:
+        description: 'Set configuration values. Separate multiple values with a comma.'
+        type: string
+        required: false
+      config-file:
+        description: 'Path to a JSON file where configuration values are set.'
+        type: string
+        required: false
+      env:
+        description: 'Sets Cypress environment variables'
+        type: string
+        required: false
+      browser:
+        description: 'Name of the browser to use'
+        type: string
+        required: false
+      command:
+        description: 'Command that overrides cypress run'
+        type: string
+        required: false
+      start:
+        description: 'Command for starting local server in the background'
+        type: string
+        required: false
+      start-windows:
+        description: 'A different start command on Windows'
+        type: string
+        required: false
+      build:
+        description: 'Command to run in build step before starting tests'
+        type: string
+        required: false
+      install:
+        description: 'Whether or not to run install'
+        type: boolean
+        required: false
+        default: true
+      install-command:
+        description: 'Custom install command to use'
+        type: string
+        required: false
+      runTests:
+        description: 'Whether or not to run tests'
+        type: boolean
+        required: false
+        default: true
+      wait-on:
+        description: 'Local server URL to wait for'
+        type: string
+        required: false
+      wait-on-timeout:
+        description: 'Amount of time to wait for wait-on url to be available'
+        type: number
+        required: false
+        default: 60
+      parallel:
+        description: 'Whether or not to load balance tests using multiple containers'
+        type: boolean
+        required: false
+      group:
+        description: 'Group setting for tests'
+        type: string
+        required: false
+      tag:
+        description: 'Tag setting for tests'
+        type: string
+        required: false
+      working-directory:
+        description: 'Working directory containing Cypress folder'
+        type: string
+        required: false
+      headed:
+        description: 'Whether or not to use the headed mode'
+        type: boolean
+        required: false
+      spec:
+        description: 'Provide a specific specs to run'
+        type: string
+        required: false
+      project:
+        description: 'Path of project to run'
+        type: string
+        required: false
+      command-prefix:
+        description: 'Prefix the default test command'
+        type: string
+        required: false
+      ci-build-id:
+        description: 'ID associates multiple CI machines to one test run'
+        type: string
+        required: false
+      cache-key:
+        description: 'Custom cache key'
+        type: string
+        required: false
+      quiet:
+        description: 'Silence Cypress specific output'
+        type: boolean
+        required: false
+        default: false
+      debug-inputs:
+        description: 'Print the workflow inputs'
+        type: boolean
+        required: false
+        default: false
+      debug:
+        description: 'Set the environment variable DEBUG'
+        type: string
+        required: false
+        default: ''
+      store-artifacts:
+        description: 'Store screenshots, videos, and reports'
+        type: boolean
+        required: false
+        default: true
+      artifact-name:
+        description: 'Name of the artifact to upload'
+        type: string
+        required: false
+        default: 'cypress-results'
+      component:
+        description: 'Run component tests instead of e2e'
+        type: boolean
+        required: false
+        default: false
+      publish-summary:
+        description: 'Whether or not to publish job summary'
+        type: boolean
+        required: false
+        default: true
+      node-version:
+        description: 'Node.js version to use'
+        type: string
+        required: false
+        default: '22'
+      run-report:
+        description: 'Generate and send test reports after run'
+        type: boolean
+        required: false
+        default: false
+      report-command:
+        description: 'Command to run for reporting'
+        type: string
+        required: false
+        default: 'npm run teamsReport'
+      report-install-command:
+        description: 'Command to install dependencies for reporting'
+        type: string
+        required: false
+        default: 'npm ci'
+
+    secrets:
+      recordKey:
+        description: 'Cypress Dashboard Record Key'
+        required: false
+      teamsWebhookUrl:
+        description: 'Teams Webhook URL for sending reports'
+        required: false
+
+    outputs:
+      artifact-url:
+        description: 'Direct URL to download the test artifacts'
+        value: ${{ jobs.standard.outputs.artifact-url }}
+
+jobs:
+  # ✅ Branch Validation Job
+  validate-main-source:
+    if: ${{ inputs.validate-main && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch ${{ inputs.main-source-branch }} branch
+        run: git fetch origin ${{ inputs.main-source-branch }}:${{ inputs.main-source-branch }}
+
+      - name: Verify commit exists in ${{ inputs.main-source-branch }}
+        run: |
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          if git merge-base --is-ancestor "$GITHUB_SHA" ${{ inputs.main-source-branch }}; then
+            echo "✅ Main commit exists in ${{ inputs.main-source-branch }} branch — OK"
+          else
+            echo "❌ Push to main must come from ${{ inputs.main-source-branch }} branch. Failing the run."
+            exit 1
+          fi
+
+  # ✅ Cypress Test & Report Job
+  standard:
+    if: ${{ github.ref != 'refs/heads/main' || github.event_name == 'repository_dispatch' }}
+    runs-on: ubuntu-22.04
+    outputs:
+      artifact-url: ${{ steps.upload-artifact.outputs.artifact-url }}
+    steps:
+      - name: Debug inputs 🐞
+        if: ${{ inputs.debug-inputs }}
+        env:
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
+        run: echo "$WORKFLOW_INPUTS"
+
+      - name: Checkout 🛎
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 🟩
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Cypress tests 🧪
+        uses: cypress-io/github-action@v6
+        with:
+          record: ${{ inputs.record }}
+          config: ${{ inputs.config }}
+          config-file: ${{ inputs.config-file }}
+          env: '${{ inputs.env }}'
+          browser: ${{ inputs.browser }}
+          command: ${{ inputs.command }}
+          start: ${{ inputs.start }}
+          start-windows: ${{ inputs.start-windows }}
+          build: ${{ inputs.build }}
+          install: ${{ inputs.install }}
+          install-command: ${{ inputs.install-command }}
+          runTests: ${{ inputs.runTests }}
+          wait-on: ${{ inputs.wait-on }}
+          wait-on-timeout: ${{ inputs.wait-on-timeout }}
+          parallel: ${{ inputs.parallel }}
+          group: ${{ inputs.group }}
+          tag: ${{ inputs.tag }}
+          working-directory: ${{ inputs.working-directory }}
+          headed: ${{ inputs.headed }}
+          spec: ${{ inputs.spec }}
+          project: ${{ inputs.project }}
+          command-prefix: ${{ inputs.command-prefix }}
+          ci-build-id: ${{ inputs.ci-build-id }}
+          cache-key: ${{ inputs.cache-key }}
+          quiet: ${{ inputs.quiet }}
+          component: ${{ inputs.component }}
+          publish-summary: ${{ inputs.publish-summary }}
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.recordKey }}
+          DEBUG: ${{ inputs.debug }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        id: upload-artifact
+        if: ${{ inputs.store-artifacts && always() }}
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: |
+            ${{ inputs.working-directory || '.' }}/cypress/screenshots
+            ${{ inputs.working-directory || '.' }}/cypress/videos
+            ${{ inputs.working-directory || '.' }}/cypress/results
+            ${{ inputs.working-directory || '.' }}/cypress/reports
+          if-no-files-found: ignore
+
+      - name: Install Dependencies for Reporting 📦
+        if: ${{ inputs.run-report && always() }}
+        run: ${{ inputs.report-install-command }}
+
+      - name: Generate & Send Report 📊
+        if: ${{ inputs.run-report && always() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.teamsWebhookUrl }}
+          ARTIFACT_URL: ${{ steps.upload-artifact.outputs.artifact-url }}
+          REPORT_URL: ${{ steps.upload-artifact.outputs.artifact-url }}
+        run: ${{ inputs.report-command }}
