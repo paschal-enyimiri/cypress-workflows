@@ -1,4 +1,4 @@
-name: standard
+name: ci-seamless
 on:
   workflow_call:
     inputs:
@@ -14,9 +14,9 @@ on:
         required: false
         default: 'staging'
       
-      # --- Cypress Configuration ---
+      # --- Cypress Configuration (aligned with cypress-io/github-action@v6 action.yml) ---
       record:
-        description: 'Sends test results to Cypress Dashboard'
+        description: 'Sends test results to Cypress Cloud'
         type: boolean
         required: false
         default: false
@@ -25,11 +25,12 @@ on:
         type: string
         required: false
       config-file:
-        description: 'Path to a JSON file where configuration values are set.'
+        description: 'Path to the cypress config file where configuration values are set'
         type: string
         required: false
+        default: ''
       env:
-        description: 'Sets Cypress environment variables'
+        description: 'Sets Cypress environment variables (comma-separated or multiline)'
         type: string
         required: false
       browser:
@@ -49,7 +50,7 @@ on:
         type: string
         required: false
       build:
-        description: 'Command to run in build step before starting tests'
+        description: 'Command to run build step before starting tests'
         type: string
         required: false
       install:
@@ -71,16 +72,16 @@ on:
         type: string
         required: false
       wait-on-timeout:
-        description: 'Amount of time to wait for wait-on url to be available'
+        description: 'Amount of time to wait for wait-on URL to be available'
         type: number
         required: false
         default: 60
       parallel:
-        description: 'Whether or not to load balance tests using multiple containers'
+        description: 'Whether or not to load balance recorded tests using multiple containers'
         type: boolean
         required: false
       group:
-        description: 'Group setting for tests'
+        description: 'Group setting for recording tests'
         type: string
         required: false
       tag:
@@ -92,11 +93,11 @@ on:
         type: string
         required: false
       headed:
-        description: 'Whether or not to use the headed mode'
+        description: 'Whether or not to use headed mode'
         type: boolean
         required: false
       spec:
-        description: 'Provide a specific specs to run'
+        description: 'Provide specific specs to run'
         type: string
         required: false
       project:
@@ -116,7 +117,7 @@ on:
         type: string
         required: false
       quiet:
-        description: 'Silence Cypress specific output'
+        description: 'Silence Cypress specific output from stdout'
         type: boolean
         required: false
         default: false
@@ -146,7 +147,7 @@ on:
         required: false
         default: false
       publish-summary:
-        description: 'Whether or not to publish job summary'
+        description: 'Whether or not to publish a job summary'
         type: boolean
         required: false
         default: true
@@ -170,13 +171,36 @@ on:
         type: string
         required: false
         default: 'npm ci'
+      timeout-minutes:
+        description: 'Timeout for the entire job to prevent hanging CI'
+        type: number
+        required: false
+        default: 30
+      auto-cancel-after-failures:
+        description: 'Cancel run after N failures (requires Cypress Cloud + v12.6+)'
+        type: number
+        required: false
+      package-manager-cache:
+        description: 'Enable/disable automatic package manager caching'
+        type: boolean
+        required: false
+        default: true
 
     secrets:
-      recordKey:
-        description: 'Cypress Dashboard Record Key'
+      BASE_URL:
+        description: 'Base URL for the application under test'
         required: false
-      teamsWebhookUrl:
-        description: 'Teams Webhook URL for sending reports'
+      ADMIN_USERNAME:
+        description: 'Admin username for authentication tests'
+        required: false
+      ADMIN_PASSWORD:
+        description: 'Admin password for authentication tests'
+        required: false
+      TEAMS_WEBHOOK_URL:
+        description: 'Teams Webhook URL for sending test reports'
+        required: false
+      CYPRESS_RECORD_KEY:
+        description: 'Cypress Cloud Record Key'
         required: false
 
     outputs:
@@ -212,6 +236,7 @@ jobs:
   standard:
     if: ${{ github.ref != 'refs/heads/main' || github.event_name == 'repository_dispatch' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
       artifact-url: ${{ steps.upload-artifact.outputs.artifact-url }}
     steps:
@@ -259,12 +284,15 @@ jobs:
           quiet: ${{ inputs.quiet }}
           component: ${{ inputs.component }}
           publish-summary: ${{ inputs.publish-summary }}
+          auto-cancel-after-failures: ${{ inputs.auto-cancel-after-failures }}
+          package-manager-cache: ${{ inputs.package-manager-cache }}
         env:
-          CYPRESS_RECORD_KEY: ${{ secrets.recordKey }}
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           DEBUG: ${{ inputs.debug }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifacts 📦
+        uses: actions/upload-artifact@v4
         id: upload-artifact
         if: ${{ inputs.store-artifacts && always() }}
         with:
@@ -278,13 +306,15 @@ jobs:
 
       - name: Install Dependencies for Reporting 📦
         if: ${{ inputs.run-report && always() }}
+        working-directory: ${{ inputs.working-directory || '.' }}
         run: ${{ inputs.report-install-command }}
 
       - name: Generate & Send Report 📊
         if: ${{ inputs.run-report && always() }}
+        working-directory: ${{ inputs.working-directory || '.' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TEAMS_WEBHOOK_URL: ${{ secrets.teamsWebhookUrl }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           ARTIFACT_URL: ${{ steps.upload-artifact.outputs.artifact-url }}
           REPORT_URL: ${{ steps.upload-artifact.outputs.artifact-url }}
         run: ${{ inputs.report-command }}
