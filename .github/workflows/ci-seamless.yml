@@ -190,32 +190,62 @@ on:
       BASE_URL:
         description: 'Base URL for the application under test'
         required: false
+      BASE_URL_STAGE:
+        description: 'Base URL for the application under test'
+        required: false
       ADMIN_USERNAME:
-        description: 'Admin email for authentication tests'
+        description: 'Admin username for authentication tests'
+        required: false
+      ADMIN_USERNAME_STAGE:
+        description: 'Admin username for authentication tests'
         required: false
       ADMIN_PASSWORD:
+        description: 'Admin password for authentication tests'
+        required: false
+      ADMIN_PASSWORD_STAGE:
         description: 'Admin password for authentication tests'
         required: false
       TEAMS_WEBHOOK_URL:
         description: 'Teams Webhook URL for sending test reports'
         required: false
+      TEAMS_WEBHOOK_URL_STAGE:
+        description: 'Teams Webhook URL for sending test reports'
+        required: false
       EMPLOYEE_USERNAME: 
-      description: 'employee email for authentication tests'
+        description: 'employee username for authentication tests'
+        required: false
+      EMPLOYEE_USERNAME_STAGE: 
+        description: 'employee username for authentication tests'
         required: false
       EMPLOYEE_PASSWORD:
-      description: 'employee passsword for authentication tests'
+        description: 'employee passsword for authentication tests'
+        required: false
+      EMPLOYEE_PASSWORD_STAGE:
+        description: 'employee passsword for authentication tests'
         required: false
       SUPERVISOR_USERNAME: 
-      description: 'supervisor email for authentication tests'
+        description: 'supervisor username for authentication tests'
+        required: false
+      SUPERVISOR_USERNAME_STAGE: 
+        description: 'supervisor username for authentication tests'
         required: false
       SUPERVISOR_PASSWORD: 
-      description: 'supervisor passsword for authentication tests'
+        description: 'supervisor passsword for authentication tests'
+        required: false
+      SUPERVISOR_PASSWORD_STAGE: 
+        description: 'supervisor passsword for authentication tests'
         required: false
       HOD_USERNAME: 
-      description: 'hod email for authentication tests'
+        description: 'hod username for authentication tests'
+        required: false
+      HOD_USERNAME_STAGE: 
+        description: 'hod username for authentication tests'
         required: false
       HOD_PASSWORD: 
-      description: 'hod passsword for authentication tests'
+        description: 'hod passsword for authentication tests'
+        required: false
+      HOD_PASSWORD_STAGE: 
+        description: 'hod passsword for authentication tests'
         required: false
       CYPRESS_RECORD_KEY:
         description: 'Cypress Cloud Record Key'
