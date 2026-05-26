@@ -191,13 +191,31 @@ on:
         description: 'Base URL for the application under test'
         required: false
       ADMIN_USERNAME:
-        description: 'Admin username for authentication tests'
+        description: 'Admin email for authentication tests'
         required: false
       ADMIN_PASSWORD:
         description: 'Admin password for authentication tests'
         required: false
       TEAMS_WEBHOOK_URL:
         description: 'Teams Webhook URL for sending test reports'
+        required: false
+      EMPLOYEE_USERNAME: 
+      description: 'employee email for authentication tests'
+        required: false
+      EMPLOYEE_PASSWORD:
+      description: 'employee passsword for authentication tests'
+        required: false
+      SUPERVISOR_USERNAME: 
+      description: 'supervisor email for authentication tests'
+        required: false
+      SUPERVISOR_PASSWORD: 
+      description: 'supervisor passsword for authentication tests'
+        required: false
+      HOD_USERNAME: 
+      description: 'hod email for authentication tests'
+        required: false
+      HOD_PASSWORD: 
+      description: 'hod passsword for authentication tests'
         required: false
       CYPRESS_RECORD_KEY:
         description: 'Cypress Cloud Record Key'
