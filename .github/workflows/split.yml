@@ -205,9 +205,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrixE2E) }}
-    # Expose inherited secrets as runner env vars so $VARIABLE refs in the
-    # inputs.env string are resolved correctly by the shell at runtime
     env:
+      # Raw env vars — used by process.env in cypress.config.ts
       ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
@@ -217,6 +216,16 @@ jobs:
       HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
       HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
       PAYROLL_BASE_URL_CONTAINER: ${{ secrets.BASE_URL }}
+      # CYPRESS_ prefixed vars — Cypress strips the prefix and adds them
+      # directly to its env, bypassing the process.env → config chain
+      CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
+      CYPRESS_adminPassword: ${{ secrets.ADMIN_PASSWORD }}
+      CYPRESS_employeeUsername: ${{ secrets.EMPLOYEE_USERNAME }}
+      CYPRESS_employeePassword: ${{ secrets.EMPLOYEE_PASSWORD }}
+      CYPRESS_supervisorUsername: ${{ secrets.SUPERVISOR_USERNAME }}
+      CYPRESS_supervisorPassword: ${{ secrets.SUPERVISOR_PASSWORD }}
+      CYPRESS_hodUsername: ${{ secrets.HOD_USERNAME }}
+      CYPRESS_hodPassword: ${{ secrets.HOD_PASSWORD }}
     steps:
       - name: Debug inputs 🐞
         if: ${{ inputs.debug-inputs }}
@@ -362,21 +371,11 @@ jobs:
           runTests: false
       # https://github.com/actions/download-artifact
       - uses: actions/download-artifact@v4
-        # download all test results artifacts from the previous jobs
-        # it would be nice to download only the split jobs test artifacts
-        # but cannot specify the pattern of the test artifacts yet
-        # https://github.com/actions/download-artifact/issues/103
         with:
           path: split-results
       - name: Display structure of downloaded files
         run: ls -R split-results
 
-      # copy all reports and videos and screenshots into a single place
-      # mochawesome/
-      #   screenshots/
-      #   videos/
-      #   results/
-      #      all individual JSON reports
       - name: Prepare folder
         run: |
           mkdir mochawesome
@@ -392,10 +391,8 @@ jobs:
         run: ls -lR mochawesome
 
       - name: Merge Mochawesome JSON reports
-        # assuming the merge tool is installed
         run: npx mochawesome-merge mochawesome/results/*.json -o mochawesome/results/merged.json
       - name: Generate Mochawesome HTML report
-        # assuming the merge tool is installed
         run: |
           npx marge mochawesome/results/merged.json \
             --charts true --showHooks always \
@@ -418,20 +415,13 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           runTests: false
-      # https://github.com/actions/download-artifact
       - uses: actions/download-artifact@v4
-        # download all test results artifacts from the previous jobs
-        # it would be nice to download only the split jobs test artifacts
-        # but cannot specify the pattern of the test artifacts yet
-        # https://github.com/actions/download-artifact/issues/103
         with:
           path: split-results
       - name: Display structure of downloaded files
         run: ls -R split-results
 
       - name: Merge coverage reports
-        # assuming the merge tool is installed
-        # https://github.com/bahmutov/cypress-code-coverage
         run: npx cc-merge split-results
 
       - uses: actions/upload-artifact@v4
@@ -440,7 +430,6 @@ jobs:
           path: coverage
 
   merge-split-timings:
-    # only merge timings if E2E specs were successful
     if: ${{ inputs.split-file }}
     needs: [e2eTests]
     outputs:
@@ -453,18 +442,12 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           runTests: false
-      # https://github.com/actions/download-artifact
       - uses: actions/download-artifact@v4
-        # download all test results artifacts from the previous jobs
-        # it would be nice to download only the split jobs test artifacts
-        # but cannot specify the pattern of the test artifacts yet
-        # https://github.com/actions/download-artifact/issues/103
         with:
           path: split-results
       - name: Display structure of downloaded files
         run: ls -R split-results
 
-      # to merge timings you need v1.13+ of cypress-split
       - name: Merge split timings
         id: merge
         run: |
@@ -474,7 +457,6 @@ jobs:
             --output ${{ inputs.split-file }} \
             --set-gha-output merged-timings
         env:
-          # pass the DEBUG environment variable
           DEBUG: ${{ inputs.debug }}
 
       - name: Print timings 🖨️
