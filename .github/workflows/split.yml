@@ -205,6 +205,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrixE2E) }}
+    # Expose inherited secrets as runner env vars so $VARIABLE refs in the
+    # inputs.env string are resolved correctly by the shell at runtime
+    env:
+      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
+      EMPLOYEE_PASSWORD: ${{ secrets.EMPLOYEE_PASSWORD }}
+      SUPERVISOR_USERNAME: ${{ secrets.SUPERVISOR_USERNAME }}
+      SUPERVISOR_PASSWORD: ${{ secrets.SUPERVISOR_PASSWORD }}
+      HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
+      HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
+      PAYROLL_BASE_URL_CONTAINER: ${{ secrets.BASE_URL }}
     steps:
       - name: Debug inputs 🐞
         if: ${{ inputs.debug-inputs }}
