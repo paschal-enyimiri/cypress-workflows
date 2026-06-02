@@ -20,7 +20,7 @@ on:
         type: string
         required: false
       config:
-        description: 'Set configuration values. Separate multiple values with a comma. The values set here override any values set in your configuration file.'
+        description: 'Set configuration values. Separate multiple values with a comma.'
         type: string
         required: false
       config-file:
@@ -145,6 +145,25 @@ on:
         description: 'E2E split timings file to use and merge back'
         type: string
         required: false
+    secrets:
+      ADMIN_USERNAME:
+        required: false
+      ADMIN_PASSWORD:
+        required: false
+      EMPLOYEE_USERNAME:
+        required: false
+      EMPLOYEE_PASSWORD:
+        required: false
+      SUPERVISOR_USERNAME:
+        required: false
+      SUPERVISOR_PASSWORD:
+        required: false
+      HOD_USERNAME:
+        required: false
+      HOD_PASSWORD:
+        required: false
+      PAYROLL_BASE_URL_CONTAINER:
+        required: false
     outputs:
       merged-timings:
         description: "Combined timings JSON from split files"
@@ -223,7 +242,6 @@ jobs:
           SPEC: '${{ inputs.spec }}'
           SKIP_SPEC: '${{ inputs.skip-spec }}'
           DEBUG: ${{ inputs.debug }}
-          # Secrets at step level — secrets context only works in step env, not job env
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
