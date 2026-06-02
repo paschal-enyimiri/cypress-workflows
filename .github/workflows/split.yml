@@ -15,12 +15,10 @@ on:
         type: number
         required: false
         default: 0
-      # a common command to run before parallel jobs
       before-run:
         description: 'A command to run once before all parallel jobs'
         type: string
         required: false
-      # standard parameters
       config:
         description: 'Set configuration values. Separate multiple values with a comma. The values set here override any values set in your configuration file.'
         type: string
@@ -75,7 +73,6 @@ on:
         description: 'Amount of time to wait for wait-on url to be available'
         type: number
         required: false
-        # default is 60 seconds
         default: 60
       working-directory:
         description: 'Working directory containing Cypress folder'
@@ -110,7 +107,6 @@ on:
         type: boolean
         required: false
         default: false
-      # custom input parameters
       debug-inputs:
         description: 'Print the workflow inputs'
         type: boolean
@@ -140,14 +136,11 @@ on:
         type: boolean
         required: false
         default: false
-      # we are setting it true by default for the split workflow
-      # since this workflow has its own GHA summary via cypress-split plugin
       publish-summary:
         description: 'Whether or not to publish job summary'
         type: boolean
         required: false
         default: false
-      # use the following split configuration/timings file
       split-file:
         description: 'E2E split timings file to use and merge back'
         type: string
@@ -168,16 +161,13 @@ jobs:
         uses: bahmutov/gh-build-matrix@main
         with:
           n: ${{ inputs.nE2E }}
-
       - name: Create component container matrix ⊹
         id: prepareComponent
         uses: bahmutov/gh-build-matrix@main
         with:
           n: ${{ inputs.nComponent }}
-
       - name: Print result 🖨
         run: echo '${{ steps.prepareE2E.outputs.matrix }}'
-
       - name: Checkout 🛎
         uses: actions/checkout@v4
       - name: Install deps 📦
@@ -188,7 +178,6 @@ jobs:
         if: ${{ inputs.before-run }}
         run: ${{ inputs.before-run }}
 
-  # the N parallel E2E testing jobs we create
   e2eTests:
     if: ${{ inputs.nE2E > 0 }}
     needs: prepare
@@ -196,27 +185,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrixE2E) }}
-    env:
-      # Raw env vars — used by process.env in cypress.config.ts
-      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-      EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
-      EMPLOYEE_PASSWORD: ${{ secrets.EMPLOYEE_PASSWORD }}
-      SUPERVISOR_USERNAME: ${{ secrets.SUPERVISOR_USERNAME }}
-      SUPERVISOR_PASSWORD: ${{ secrets.SUPERVISOR_PASSWORD }}
-      HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
-      HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
-      PAYROLL_BASE_URL_CONTAINER: ${{ secrets.BASE_URL }}
-      # CYPRESS_ prefixed vars — Cypress strips the prefix and injects them
-      # directly into its env, bypassing the process.env → config chain
-      CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
-      CYPRESS_adminPassword: ${{ secrets.ADMIN_PASSWORD }}
-      CYPRESS_employeeUsername: ${{ secrets.EMPLOYEE_USERNAME }}
-      CYPRESS_employeePassword: ${{ secrets.EMPLOYEE_PASSWORD }}
-      CYPRESS_supervisorUsername: ${{ secrets.SUPERVISOR_USERNAME }}
-      CYPRESS_supervisorPassword: ${{ secrets.SUPERVISOR_PASSWORD }}
-      CYPRESS_hodUsername: ${{ secrets.HOD_USERNAME }}
-      CYPRESS_hodPassword: ${{ secrets.HOD_PASSWORD }}
     steps:
       - name: Debug inputs 🐞
         if: ${{ inputs.debug-inputs }}
@@ -225,6 +193,14 @@ jobs:
         run: echo "$WORKFLOW_INPUTS"
 
       - name: Debug env vars 🔍
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
+          SUPERVISOR_USERNAME: ${{ secrets.SUPERVISOR_USERNAME }}
+          HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
+          PAYROLL_BASE_URL_CONTAINER: ${{ secrets.PAYROLL_BASE_URL_CONTAINER }}
         run: |
           echo "=== Runner env var presence ==="
           echo "ADMIN_USERNAME        set=$( [ -n "$ADMIN_USERNAME" ] && echo yes || echo NO ) len=${#ADMIN_USERNAME}"
@@ -238,7 +214,6 @@ jobs:
       - name: Checkout 🛎
         uses: actions/checkout@v4
 
-      # these containers will load balance all found tests among themselves
       - name: Cypress tests 🧪
         uses: cypress-io/github-action@v6
         env:
@@ -248,6 +223,24 @@ jobs:
           SPEC: '${{ inputs.spec }}'
           SKIP_SPEC: '${{ inputs.skip-spec }}'
           DEBUG: ${{ inputs.debug }}
+          # Secrets at step level — secrets context only works in step env, not job env
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
+          EMPLOYEE_PASSWORD: ${{ secrets.EMPLOYEE_PASSWORD }}
+          SUPERVISOR_USERNAME: ${{ secrets.SUPERVISOR_USERNAME }}
+          SUPERVISOR_PASSWORD: ${{ secrets.SUPERVISOR_PASSWORD }}
+          HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
+          HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
+          PAYROLL_BASE_URL_CONTAINER: ${{ secrets.PAYROLL_BASE_URL_CONTAINER }}
+          CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
+          CYPRESS_adminPassword: ${{ secrets.ADMIN_PASSWORD }}
+          CYPRESS_employeeUsername: ${{ secrets.EMPLOYEE_USERNAME }}
+          CYPRESS_employeePassword: ${{ secrets.EMPLOYEE_PASSWORD }}
+          CYPRESS_supervisorUsername: ${{ secrets.SUPERVISOR_USERNAME }}
+          CYPRESS_supervisorPassword: ${{ secrets.SUPERVISOR_PASSWORD }}
+          CYPRESS_hodUsername: ${{ secrets.HOD_USERNAME }}
+          CYPRESS_hodPassword: ${{ secrets.HOD_PASSWORD }}
         with:
           config: ${{ inputs.config }}
           config-file: ${{ inputs.config-file }}
@@ -283,7 +276,6 @@ jobs:
             ${{ inputs.split-file }}
           if-no-files-found: ignore
 
-  # the N parallel Component testing jobs we create
   componentTests:
     if: ${{ inputs.nComponent > 0 }}
     needs: prepare
@@ -297,10 +289,8 @@ jobs:
         env:
           WORKFLOW_INPUTS: ${{ toJson(inputs) }}
         run: echo "$WORKFLOW_INPUTS"
-
       - name: Checkout 🛎
         uses: actions/checkout@v4
-
       - name: Cypress tests 🧪
         uses: cypress-io/github-action@v6
         env:
@@ -327,7 +317,6 @@ jobs:
           cache-key: ${{ inputs.cache-key }}
           quiet: ${{ inputs.quiet }}
           component: true
-
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.store-artifacts && always() }}
         with:
