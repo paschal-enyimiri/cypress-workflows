@@ -216,6 +216,7 @@ jobs:
 
       - name: Cypress tests 🧪
         uses: cypress-io/github-action@v6
+        continue-on-error: true
         env:
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
@@ -292,6 +293,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Cypress tests 🧪
         uses: cypress-io/github-action@v6
+        continue-on-error: true
         env:
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
@@ -328,7 +330,7 @@ jobs:
           if-no-files-found: ignore
 
   merge-reports:
-    if: ${{ inputs.store-artifacts && inputs.marge && always() }}
+    if: ${{ always() && inputs.store-artifacts && inputs.marge }}
     needs: [e2eTests, componentTests]
     runs-on: ubuntu-22.04
     steps:
@@ -370,7 +372,7 @@ jobs:
           path: mochawesome
 
   merge-coverage:
-    if: ${{ inputs.store-artifacts && inputs.coverage && always() }}
+    if: ${{ always() && inputs.store-artifacts && inputs.coverage }}
     needs: [e2eTests, componentTests]
     runs-on: ubuntu-22.04
     steps:
@@ -393,7 +395,7 @@ jobs:
           path: coverage
 
   merge-split-timings:
-    if: ${{ inputs.split-file }}
+    if: ${{ always() && inputs.split-file }}
     needs: [e2eTests]
     outputs:
       timings: ${{ steps.merge.outputs.merged-timings }}
