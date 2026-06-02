@@ -1,5 +1,5 @@
 # reusable workflow to install NPM dependencies
-# and run Cypress tests across N machines in using cypress-split
+# and run Cypress tests across N machines using cypress-split
 # https://github.com/bahmutov/cypress-split
 name: split
 on:
@@ -210,25 +210,6 @@ jobs:
         env:
           WORKFLOW_INPUTS: ${{ toJson(inputs) }}
         run: echo "$WORKFLOW_INPUTS"
-
-      - name: Debug env vars 🔍
-        env:
-          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
-          CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          EMPLOYEE_USERNAME: ${{ secrets.EMPLOYEE_USERNAME }}
-          SUPERVISOR_USERNAME: ${{ secrets.SUPERVISOR_USERNAME }}
-          HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
-          PAYROLL_BASE_URL_CONTAINER: ${{ secrets.PAYROLL_BASE_URL_CONTAINER }}
-        run: |
-          echo "=== Runner env var presence ==="
-          echo "ADMIN_USERNAME        set=$( [ -n "$ADMIN_USERNAME" ] && echo yes || echo NO ) len=${#ADMIN_USERNAME}"
-          echo "CYPRESS_adminUsername set=$( [ -n "$CYPRESS_adminUsername" ] && echo yes || echo NO ) len=${#CYPRESS_adminUsername}"
-          echo "ADMIN_PASSWORD        set=$( [ -n "$ADMIN_PASSWORD" ] && echo yes || echo NO ) len=${#ADMIN_PASSWORD}"
-          echo "EMPLOYEE_USERNAME     set=$( [ -n "$EMPLOYEE_USERNAME" ] && echo yes || echo NO ) len=${#EMPLOYEE_USERNAME}"
-          echo "SUPERVISOR_USERNAME   set=$( [ -n "$SUPERVISOR_USERNAME" ] && echo yes || echo NO ) len=${#SUPERVISOR_USERNAME}"
-          echo "HOD_USERNAME          set=$( [ -n "$HOD_USERNAME" ] && echo yes || echo NO ) len=${#HOD_USERNAME}"
-          echo "PAYROLL_BASE_URL_CONTAINER set=$( [ -n "$PAYROLL_BASE_URL_CONTAINER" ] && echo yes || echo NO ) len=${#PAYROLL_BASE_URL_CONTAINER}"
 
       - name: Checkout 🛎
         uses: actions/checkout@v4
