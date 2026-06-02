@@ -215,6 +215,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cypress tests 🧪
+        id: cypress
         uses: cypress-io/github-action@v6
         continue-on-error: true
         env:
@@ -264,7 +265,8 @@ jobs:
           quiet: ${{ inputs.quiet }}
           publish-summary: ${{ inputs.publish-summary }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts 📦
+        uses: actions/upload-artifact@v4
         if: ${{ inputs.store-artifacts && always() }}
         with:
           name: cypress-split-results-e2e-${{ strategy.job-index }}
@@ -275,6 +277,10 @@ jobs:
             coverage
             ${{ inputs.split-file }}
           if-no-files-found: ignore
+
+      - name: Fail pipeline if tests failed ❌
+        if: ${{ steps.cypress.outcome == 'failure' }}
+        run: exit 1
 
   componentTests:
     if: ${{ inputs.nComponent > 0 }}
@@ -292,6 +298,7 @@ jobs:
       - name: Checkout 🛎
         uses: actions/checkout@v4
       - name: Cypress tests 🧪
+        id: cypress
         uses: cypress-io/github-action@v6
         continue-on-error: true
         env:
@@ -318,7 +325,8 @@ jobs:
           cache-key: ${{ inputs.cache-key }}
           quiet: ${{ inputs.quiet }}
           component: true
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifacts 📦
+        uses: actions/upload-artifact@v4
         if: ${{ inputs.store-artifacts && always() }}
         with:
           name: cypress-split-results-component-${{ strategy.job-index }}
@@ -328,6 +336,9 @@ jobs:
             cypress/results
             coverage
           if-no-files-found: ignore
+      - name: Fail pipeline if tests failed ❌
+        if: ${{ steps.cypress.outcome == 'failure' }}
+        run: exit 1
 
   merge-reports:
     if: ${{ always() && inputs.store-artifacts && inputs.marge }}
