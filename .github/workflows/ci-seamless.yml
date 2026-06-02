@@ -282,7 +282,6 @@ jobs:
 
   # ✅ Cypress Test & Report Job
   standard:
-    if: ${{ github.ref != 'refs/heads/main' || github.event_name == 'repository_dispatch' }}
     runs-on: ubuntu-22.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
