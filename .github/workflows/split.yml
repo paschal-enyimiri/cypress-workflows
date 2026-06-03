@@ -164,6 +164,8 @@ on:
         required: false
       BASE_URL_STAGE:
         required: false
+      BASE_URL_PROD:
+        required: false
     outputs:
       merged-timings:
         description: "Combined timings JSON from split files"
@@ -234,6 +236,7 @@ jobs:
           HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
           HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
           BASE_URL_STAGE: ${{ secrets.BASE_URL_STAGE }}
+          BASE_URL_PROD: ${{ secrets.BASE_URL_PROD }}
           CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
           CYPRESS_adminPassword: ${{ secrets.ADMIN_PASSWORD }}
           CYPRESS_employeeUsername: ${{ secrets.EMPLOYEE_USERNAME }}
