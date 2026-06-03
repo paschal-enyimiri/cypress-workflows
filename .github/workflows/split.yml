@@ -5,6 +5,16 @@ name: split
 on:
   workflow_call:
     inputs:
+      validate-main:
+        description: 'Verify that commits pushed to main originated from the source branch'
+        type: boolean
+        required: false
+        default: false
+      main-source-branch:
+        description: 'Branch that main must be merged from (default: staging)'
+        type: string
+        required: false
+        default: 'staging'
       nE2E:
         description: 'Number of parallel containers for running E2E specs'
         type: number
@@ -171,6 +181,27 @@ on:
         description: "Combined timings JSON from split files"
         value: ${{ jobs.merge-split-timings.outputs.timings }}
 jobs:
+  validate-main-source:
+    if: ${{ inputs.validate-main && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch ${{ inputs.main-source-branch }} branch
+        run: git fetch origin ${{ inputs.main-source-branch }}:${{ inputs.main-source-branch }}
+
+      - name: Verify commit exists in ${{ inputs.main-source-branch }}
+        run: |
+          if git merge-base --is-ancestor "$GITHUB_SHA" ${{ inputs.main-source-branch }}; then
+            echo "✅ Main commit exists in ${{ inputs.main-source-branch }} — OK"
+          else
+            echo "❌ Push to main must come from ${{ inputs.main-source-branch }}. Failing."
+            exit 1
+          fi
+
   prepare:
     runs-on: ubuntu-22.04
     outputs:
