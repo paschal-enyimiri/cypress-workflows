@@ -162,7 +162,7 @@ on:
         required: false
       HOD_PASSWORD:
         required: false
-      PAYROLL_BASE_URL_CONTAINER:
+      BASE_URL_STAGE:
         required: false
     outputs:
       merged-timings:
@@ -233,7 +233,7 @@ jobs:
           SUPERVISOR_PASSWORD: ${{ secrets.SUPERVISOR_PASSWORD }}
           HOD_USERNAME: ${{ secrets.HOD_USERNAME }}
           HOD_PASSWORD: ${{ secrets.HOD_PASSWORD }}
-          PAYROLL_BASE_URL_CONTAINER: ${{ secrets.PAYROLL_BASE_URL_CONTAINER }}
+          BASE_URL_STAGE: ${{ secrets.BASE_URL_STAGE }}
           CYPRESS_adminUsername: ${{ secrets.ADMIN_USERNAME }}
           CYPRESS_adminPassword: ${{ secrets.ADMIN_PASSWORD }}
           CYPRESS_employeeUsername: ${{ secrets.EMPLOYEE_USERNAME }}
